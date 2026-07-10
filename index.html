@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="only light">
+<title>体感する数学A|場合の数・確率のインタラクティブ教材</title>
+<meta name="description" content="高校数学Aの「場合の数・確率」を、アニメーションと自分で動かせる教材で体感しながら理解するサイト。円順列など、公式の意味が腑に落ちる解説を無料で公開しています。">
+<style>
+:root{
+  color-scheme: only light;
+  --bg:#FFFFFF;
+  --bg-soft:#F2F7FC;
+  --blue:#1565C0;
+  --blue-dark:#0D47A1;
+  --ink:#1C1C1C;
+  --ink-soft:#555F6B;
+  --line:#C6D3DE;
+  --hi:#FFF176;
+  --cA:#D84334; --cB:#1E74C8; --cC:#2E8B4E; --cD:#DE8F1F;
+}
+@media (prefers-reduced-motion: reduce){
+  *{ transition-duration:0s !important; animation-duration:0s !important; }
+}
+/* WebView等の自動ダーク化(強制色反転)への対策:ダーク時も同じ配色を使うと明示 */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#FFFFFF; --bg-soft:#F2F7FC;
+    --blue:#1565C0; --blue-dark:#0D47A1;
+    --ink:#1C1C1C; --ink-soft:#555F6B; --line:#C6D3DE; --hi:#FFF176;
+    --cA:#D84334; --cB:#1E74C8; --cC:#2E8B4E; --cD:#DE8F1F;
+  }
+  body{ background:#FFFFFF !important; color:#1C1C1C !important; }
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html, body{ overflow-x:hidden; }
+body{
+  font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',
+              'Noto Sans JP', system-ui, sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+  line-height:1.9;
+  -webkit-tap-highlight-color:transparent;
+}
+main{ max-width:680px; margin:0 auto; padding:0 14px 80px; }
+.nb{ display:inline-block; }
+
+/* ---- ヘッダー ---- */
+header.hero{
+  padding:48px 0 24px;
+  border-bottom:3px solid var(--blue);
+  margin-bottom:8px;
+  text-align:center;
+}
+.site-name{
+  font-size:clamp(1.5rem, 6.5vw, 2rem); font-weight:700; color:var(--blue-dark);
+  letter-spacing:.04em;
+}
+.site-sub{
+  margin-top:6px; color:var(--ink-soft); font-size:.9rem; font-weight:700;
+}
+.hero p.lead{
+  margin-top:16px; color:var(--ink-soft); font-size:.93rem; text-align:left;
+}
+.hl{
+  background:linear-gradient(transparent 58%, var(--hi) 58%, var(--hi) 94%, transparent 94%);
+  padding:0 .08em; font-weight:700;
+}
+
+/* ---- 特徴(3ポイント) ---- */
+.features{
+  display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
+  gap:8px; margin-top:20px;
+}
+.feature{
+  background:var(--bg-soft); border-radius:10px; padding:12px 8px;
+  text-align:center; font-size:.8rem; font-weight:700; color:var(--blue-dark);
+  line-height:1.5;
+}
+.feature .icon{ font-size:1.4rem; display:block; margin-bottom:4px; }
+
+/* ---- 単元セクション ---- */
+section.unit{ margin-top:40px; }
+.unit-head{
+  display:flex; align-items:center; gap:10px;
+  border-left:6px solid var(--blue);
+  background:var(--bg-soft);
+  padding:8px 12px; border-radius:0 6px 6px 0;
+}
+.unit-head h2{
+  font-size:clamp(1rem, 4vw, 1.15rem); font-weight:700; color:var(--blue-dark);
+}
+.unit-body{ padding:14px 2px 0; }
+.unit-body > p{ font-size:.9rem; color:var(--ink-soft); }
+
+/* ---- トピックカード ---- */
+.topic-list{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+a.topic{
+  display:block; text-decoration:none; color:inherit;
+  border:2px solid var(--line); border-radius:10px;
+  padding:14px 16px;
+  transition:border-color .2s, background .2s, transform .1s;
+}
+a.topic:hover, a.topic:focus-visible{
+  border-color:var(--blue); background:var(--bg-soft);
+}
+a.topic:active{ transform:scale(.99); }
+.topic-title{
+  font-weight:700; font-size:1rem; color:var(--blue-dark);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.topic-title .arrow{ margin-left:auto; color:var(--blue); }
+.topic-desc{ font-size:.83rem; color:var(--ink-soft); margin-top:4px; }
+.badge{
+  font-size:.7rem; font-weight:700; color:#fff; background:var(--blue);
+  border-radius:4px; padding:1px 8px; white-space:nowrap;
+}
+/* 準備中のトピック */
+.topic.soon{
+  border:2px dashed var(--line); border-radius:10px;
+  padding:14px 16px; opacity:.65;
+}
+.topic.soon .topic-title{ color:var(--ink-soft); }
+.badge.soon{ background:var(--ink-soft); }
+
+/* ---- このサイトについて ---- */
+.about-box{
+  margin-top:40px; border:2.5px solid var(--blue); border-radius:10px;
+  background:#fff; overflow:hidden;
+}
+.about-box .box-title{
+  background:var(--blue); color:#fff; font-weight:700; font-size:.95rem;
+  padding:6px 14px;
+}
+.about-box .box-body{ padding:14px 16px 18px; }
+.about-box p{ font-size:.9rem; }
+.about-box p + p{ margin-top:8px; }
+
+footer{
+  margin-top:60px; text-align:center; color:var(--ink-soft); font-size:.8rem;
+  border-top:1px solid var(--line); padding-top:16px;
+}
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <div class="site-name">体感する数学A</div>
+  <div class="site-sub">場合の数・確率|さわって学ぶインタラクティブ教材</div>
+  <p class="lead">
+    公式の丸暗記では、少しひねられた瞬間に解けなくなります。このサイトでは、高校数学Aの「場合の数・確率」を、<span class="hl">アニメーションと自分の指で動かせる教材</span>で体感しながら理解していきます。すべて無料です。
+  </p>
+  <div class="features">
+    <div class="feature"><span class="icon">👆</span>自分で動かして<br>発見する</div>
+    <div class="feature"><span class="icon">🎬</span>アニメーションで<br>過程が見える</div>
+    <div class="feature"><span class="icon">📐</span>公式の「なぜ」が<br>腑に落ちる</div>
+  </div>
+</header>
+
+<!-- ================= 場合の数 ================= -->
+<section class="unit">
+  <div class="unit-head"><h2>場合の数</h2></div>
+  <div class="unit-body">
+    <p>数えあげの基本から、順列・組合せの使い分けまで。</p>
+    <div class="topic-list">
+
+      <a class="topic" href="circular-permutation.html">
+        <div class="topic-title">
+          円順列 ―「回したら同じ」を体感する
+          <span class="badge">公開中</span>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="topic-desc">なぜ (n−1)! になるのか?を、円を自分で回しながら発見します。「1人固定」の本当の意味がわかります。</div>
+      </a>
+
+      <div class="topic soon">
+        <div class="topic-title">順列(P)の基本 <span class="badge soon">準備中</span></div>
+        <div class="topic-desc">樹形図が育つアニメーションで「かけ算で数える」感覚をつかみます。</div>
+      </div>
+
+      <div class="topic soon">
+        <div class="topic-title">じゅず順列 <span class="badge soon">準備中</span></div>
+        <div class="topic-desc">円順列との違いは「裏返し」。実際にひっくり返して確かめます。</div>
+      </div>
+
+      <div class="topic soon">
+        <div class="topic-title">組合せ(C)と順列の違い <span class="badge soon">準備中</span></div>
+        <div class="topic-desc">「並べる」と「選ぶ」の違いを、ダブりが消えていくアニメーションで整理します。</div>
+      </div>
+
+      <div class="topic soon">
+        <div class="topic-title">重複組合せ(○と仕切り) <span class="badge soon">準備中</span></div>
+        <div class="topic-desc">仕切りをドラッグして動かしながら、対応関係を体感します。</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= 確率 ================= -->
+<section class="unit">
+  <div class="unit-head"><h2>確率</h2></div>
+  <div class="unit-body">
+    <p>基本性質から、共通テスト最頻出の条件付き確率・期待値まで。</p>
+    <div class="topic-list">
+
+      <div class="topic soon">
+        <div class="topic-title">確率の基本 <span class="badge soon">準備中</span></div>
+        <div class="topic-desc">シミュレーターで何千回も試して、理論値に近づいていく様子を目撃します。</div>
+      </div>
+
+      <div class="topic soon">
+        <div class="topic-title">条件付き確率 <span class="badge soon">準備中</span></div>
+        <div class="topic-desc">面積図をスライダーで操作しながら「分母が変わる」感覚をつかみます。</div>
+      </div>
+
+      <div class="topic soon">
+        <div class="topic-title">期待値 <span class="badge soon">準備中</span></div>
+        <div class="topic-desc">くじ引きシミュレーターで、平均への収束を体感します。</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= このサイトについて ================= -->
+<div class="about-box">
+  <div class="box-title">このサイトについて</div>
+  <div class="box-body">
+    <p>高校生に数学を教えている大学生が運営しています。場合の数・確率は、公式の意味を一度「体感」してしまえば得点源になる分野です。</p>
+    <p>教科書や授業の予習・復習の補助として自由に使ってください。トピックは順次追加していきます。</p>
+  </div>
+</div>
+
+<footer>
+  体感する数学A — 場合の数・確率のインタラクティブ教材
+</footer>
+
+</main>
+</body>
+</html>

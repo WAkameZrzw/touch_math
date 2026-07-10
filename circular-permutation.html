@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- ダークモードによる強制反転を禁止(背景が黒くなる問題の対策) -->
+<meta name="color-scheme" content="only light">
+<title>円順列を体感する|数学A 場合の数</title>
+<style>
+/* ============================================================
+   デザイントークン(教科書スタイル:白背景 × 青見出し)
+   ============================================================ */
+:root{
+  color-scheme: only light;
+  --bg:#FFFFFF;
+  --bg-soft:#F2F7FC;          /* 薄い水色(補足・ステージ背景) */
+  --blue:#1565C0;             /* 見出しのメイン青 */
+  --blue-dark:#0D47A1;
+  --ink:#1C1C1C;
+  --ink-soft:#555F6B;
+  --line:#C6D3DE;
+  --hi:#FFF176;               /* マーカー黄 */
+  --cA:#D84334; --cB:#1E74C8; --cC:#2E8B4E; --cD:#DE8F1F;
+  --ok:#2E8B4E; --ng:#D84334;
+  /* チップの大きさを画面幅に連動させる(横はみ出し対策) */
+  --chip-s: clamp(15px, 4.2vw, 22px);
+}
+@media (prefers-reduced-motion: reduce){
+  *{ transition-duration:0s !important; animation-duration:0s !important; }
+}
+/* 一部のWebView(Androidアプリ内ブラウザ等)はmeta color-schemeを無視し、
+   「ダーク配色を用意していないページ」を自動で色反転させることがある。
+   ダーク時にも“同じ配色をそのまま使う”と明示することで、自動反転の対象から外す。 */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#FFFFFF; --bg-soft:#F2F7FC;
+    --blue:#1565C0; --blue-dark:#0D47A1;
+    --ink:#1C1C1C; --ink-soft:#555F6B; --line:#C6D3DE;
+    --hi:#FFF176;
+    --cA:#D84334; --cB:#1E74C8; --cC:#2E8B4E; --cD:#DE8F1F;
+    --ok:#2E8B4E; --ng:#D84334;
+  }
+  body{ background:#FFFFFF !important; color:#1C1C1C !important; }
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html, body{
+  overflow-x:hidden;          /* 横はみ出しの保険 */
+}
+html{ scroll-behavior:smooth; }
+body{
+  font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',
+              'Noto Sans JP', system-ui, sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+  line-height:1.9;
+  -webkit-tap-highlight-color:transparent;
+}
+main{ max-width:680px; margin:0 auto; padding:0 14px 80px; }
+
+/* ---- ヘッダー ---- */
+header.hero{
+  padding:40px 0 20px;
+  border-bottom:3px solid var(--blue);
+  margin-bottom:8px;
+}
+.eyebrow{
+  display:inline-block; font-size:.8rem; font-weight:700; letter-spacing:.1em;
+  color:#fff; background:var(--blue); border-radius:4px;
+  padding:2px 12px; margin-bottom:12px;
+}
+h1{ font-size:clamp(1.25rem, 5.2vw, 1.55rem); font-weight:700; line-height:1.5; color:var(--ink); }
+.nb{ display:inline-block; } /* 語句のかたまり単位でしか改行させない */
+.hero p.lead{ margin-top:10px; color:var(--ink-soft); font-size:.93rem; }
+
+/* マーカー */
+.hl{
+  background:linear-gradient(transparent 58%, var(--hi) 58%, var(--hi) 94%, transparent 94%);
+  padding:0 .08em; font-weight:700;
+}
+
+/* ---- セクション(教科書の単元見出し風) ---- */
+section.step{ margin-top:44px; }
+.step-head{
+  display:flex; align-items:center; gap:10px;
+  border-left:6px solid var(--blue);
+  background:var(--bg-soft);
+  padding:8px 12px; border-radius:0 6px 6px 0;
+}
+.step-num{
+  color:#fff; background:var(--blue); font-weight:700; font-size:.8rem;
+  border-radius:4px; padding:1px 10px; white-space:nowrap;
+}
+.step-head h2{ font-size:clamp(.98rem, 3.9vw, 1.15rem); font-weight:700; color:var(--blue-dark); }
+.step-body{ padding:14px 2px 0; }
+.step-body > p{ font-size:.95rem; margin-top:8px; }
+.note{
+  color:var(--ink-soft); font-size:.87rem;
+  background:var(--bg-soft); border-radius:8px; padding:10px 14px; margin-top:14px;
+}
+
+/* ---- ボタン ---- */
+.btn{
+  font-family:inherit; font-weight:700; font-size:.93rem;
+  color:#fff; background:var(--blue);
+  border:none; border-radius:8px;
+  padding:11px 22px; cursor:pointer;
+  box-shadow:0 2px 0 var(--blue-dark);
+  transition:transform .1s, box-shadow .1s, opacity .3s;
+  touch-action:manipulation;
+}
+.btn:active{ transform:translateY(2px); box-shadow:0 0 0 var(--blue-dark); }
+.btn:focus-visible{ outline:3px solid var(--cD); outline-offset:2px; }
+.btn[disabled]{ opacity:.35; cursor:default; pointer-events:none; }
+.btn.ghost{
+  background:#fff; color:var(--blue); border:2px solid var(--blue);
+  box-shadow:none; padding:8px 18px; font-size:.87rem;
+}
+.btn-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+
+/* ---- 人チップ ---- */
+.chip{
+  width:34px; height:34px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  color:#fff; font-weight:700; font-size:1rem;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.2);
+  user-select:none; -webkit-user-select:none; flex:none;
+}
+.chip.A{ background:var(--cA); } .chip.B{ background:var(--cB); }
+.chip.C{ background:var(--cC); } .chip.D{ background:var(--cD); }
+
+/* ---- STEP1・STEP3 共通:順列グリッド ----
+   チップ幅を vw 連動にして、どの画面幅でも4列がはみ出さない */
+.cast{ display:flex; gap:10px; margin:14px 0 4px; }
+.count-line{
+  font-weight:700; font-size:1.25rem; color:var(--blue-dark);
+  margin-top:14px; min-height:1.6em;
+}
+.perm-grid{
+  display:grid; grid-template-columns:repeat(4, minmax(0,1fr));
+  gap:6px; margin-top:16px;
+}
+.strip{
+  display:flex; gap:2px; justify-content:center; min-width:0;
+  background:#fff; border:2px solid var(--line); border-radius:8px;
+  padding:4px 2px;
+  transition:background .5s, border-color .5s, opacity .45s, transform .45s;
+}
+.strip .chip{
+  width:var(--chip-s); height:var(--chip-s);
+  font-size:calc(var(--chip-s) * .62);
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.2);
+}
+.perm-grid#permGrid .strip{ opacity:0; transform:translateY(8px) scale(.9); }
+.perm-grid#permGrid.shown .strip{ opacity:1; transform:none; }
+
+/* ---- STEP2: 帯→円、ドラッグ回転 ---- */
+.two-stages{
+  display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;
+}
+.stage-wrap{
+  text-align:center;
+  width:min(170px, 43vw);  /* stage と同じ幅に固定。ヒント文言の長さで幅が変わりズレるのを防ぐ */
+}
+.stage-label{
+  font-weight:700; font-size:.85rem; margin-bottom:4px;
+  display:flex; gap:2px; justify-content:center; align-items:center; min-height:26px;
+}
+.stage-label .chip{ width:20px; height:20px; font-size:.68rem; }
+.stage{
+  position:relative;
+  width:100%; height:min(170px, 43vw); /* 親(stage-wrap)の幅に追従 */
+  border-radius:14px; background:var(--bg-soft);
+  border:2px dashed var(--line);
+  /* touch-action は常時 none にはしない → 円になる前・回転ハンドル以外はページスクロールを妨げない */
+}
+.stage .chip{ position:absolute; left:0; top:0; will-change:transform; }
+.stage.curl .chip{ transition:transform .9s cubic-bezier(.5,0,.2,1); }
+.stage.draggable{ cursor:grab; border-style:solid; border-color:var(--blue); }
+.stage.dragging{ cursor:grabbing; }
+.stage .ring{
+  position:absolute; inset:18%; border-radius:50%;
+  border:2px dashed var(--line); pointer-events:none;
+  opacity:0; transition:opacity .5s;
+}
+.stage.curl .ring{ opacity:1; }
+/* 回転の当たり判定は円形のみに限定する。四隅は常にページスクロールに使える */
+.hit-area{
+  position:absolute; inset:10%; border-radius:50%;
+  touch-action:none;
+}
+.stage.draggable .hit-area{ cursor:grab; }
+.stage.dragging .hit-area{ cursor:grabbing; }
+.stage.matched{ border-color:var(--ok); background:#E9F6EC; }
+.stage.matched .ring{ border-color:var(--ok); border-style:solid; }
+.rotate-hint{ font-size:.8rem; color:var(--ink-soft); margin-top:6px; min-height:1.4em; }
+.match-msg{
+  margin-top:16px; font-weight:700; font-size:1.1rem; color:var(--ok); text-align:center;
+  opacity:0; transform:scale(.85); transition:opacity .5s, transform .5s;
+  min-height:1.6em;
+}
+.match-msg.show{ opacity:1; transform:none; }
+
+/* ---- STEP3: グループ色(濃くして枠線でも区別) ---- */
+.strip.g0{ background:#FFC7C0; border-color:#D84334; }
+.strip.g1{ background:#BBDCF7; border-color:#1E74C8; }
+.strip.g2{ background:#BFE8CB; border-color:#2E8B4E; }
+.strip.g3{ background:#FFDFA6; border-color:#DE8F1F; }
+.strip.g4{ background:#E3C9F0; border-color:#8E4FB5; }
+.strip.g5{ background:#B4E4EC; border-color:#0D93A8; }
+.strip.rep{ border-width:3px; border-color:var(--ink); }
+.strip.gone{ opacity:0; transform:scale(.25); pointer-events:none; }
+/* 1つにまとめた後は6個になるので、4列だと4+2に折り返して不格好になる → 3列にする */
+.perm-grid.merged{ grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+.formula{
+  font-weight:700; font-size:1.3rem; color:var(--blue-dark);
+  text-align:center; margin-top:18px; min-height:1.7em;
+}
+.fade-block{ opacity:0; transform:translateY(10px); transition:opacity .6s, transform .6s; }
+.fade-block.show{ opacity:1; transform:none; }
+
+/* ---- STEP4: A固定 ---- */
+.circle-grid{
+  display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
+  gap:8px; margin-top:18px;
+}
+.mini-wrap{ text-align:center; min-width:0; }
+.mini{
+  position:relative; width:100%; aspect-ratio:1; max-width:150px; margin:0 auto;
+  border-radius:12px; background:var(--bg-soft); border:2px dashed var(--line);
+}
+.mini .chip{
+  position:absolute; left:0; top:0;
+  width:clamp(20px, 6.5vw, 26px); height:clamp(20px, 6.5vw, 26px);
+  font-size:.78rem; will-change:transform;
+}
+.mini.fixed{ border-style:solid; border-color:var(--blue); }
+.mini.fixed .chip.A{ box-shadow:inset 0 -2px 0 rgba(0,0,0,.2), 0 0 0 3px var(--hi); }
+.rest-line{
+  margin-top:4px; font-size:.78rem; font-weight:700; letter-spacing:.08em;
+  min-height:1.4em; opacity:0; transition:opacity .5s;
+}
+.rest-line.show{ opacity:1; }
+
+/* ---- まとめ(教科書の「公式」枠) ---- */
+.summary-box{
+  margin-top:20px; border:2.5px solid var(--blue); border-radius:10px;
+  background:#fff; overflow:hidden;
+}
+.summary-box .box-title{
+  background:var(--blue); color:#fff; font-weight:700; font-size:.95rem;
+  padding:6px 14px;
+}
+.summary-box .box-body{ padding:14px 16px 18px; }
+.summary-box p{ font-size:.93rem; }
+.big-formula{
+  font-weight:700; font-size:1.5rem; color:var(--blue-dark);
+  text-align:center; margin:12px 0 4px;
+}
+
+/* ---- クイズ ---- */
+.quiz-opts{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.quiz-msg{ margin-top:12px; font-weight:700; min-height:1.6em; font-size:.93rem; }
+.quiz-msg.ok{ color:var(--ok); }
+.quiz-msg.ng{ color:var(--ng); }
+
+footer{
+  margin-top:60px; text-align:center; color:var(--ink-soft); font-size:.8rem;
+  border-top:1px solid var(--line); padding-top:16px;
+}
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <span class="eyebrow">数学A|場合の数</span>
+  <h1><span class="nb">円順列 ―</span><span class="nb">「回したら同じ」を</span><span class="nb">体感する</span></h1>
+  <p class="lead">4人 A・B・C・D を円形のテーブルに座らせます。並べ方は何通り? 公式を覚える前に、まず自分の指で確かめてみましょう。</p>
+</header>
+
+<!-- ================= STEP 1 ================= -->
+<section class="step" id="step1">
+  <div class="step-head"><span class="step-num">STEP 1</span><h2>まずは一列に並べると?</h2></div>
+  <div class="step-body">
+    <p>A・B・C・D の4人を<strong>一列</strong>に並べる並べ方(順列)を全部書き出してみます。</p>
+    <div class="cast">
+      <span class="chip A">A</span><span class="chip B">B</span><span class="chip C">C</span><span class="chip D">D</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btnShowPerms">全部ならべてみる</button>
+      <button class="btn ghost" id="btnReset1">戻す</button>
+    </div>
+    <div class="count-line" id="permCount"></div>
+    <div class="perm-grid" id="permGrid" aria-live="polite"></div>
+    <p class="note" id="step1Note" style="display:none;">先頭は4通り、次は3通り、…と選んでいくので 4×3×2×1。これが<strong>直線</strong>の順列です。では、円に並べたらどうなるでしょう?</p>
+  </div>
+</section>
+
+<!-- ================= STEP 2 ================= -->
+<section class="step" id="step2">
+  <div class="step-head"><span class="step-num">STEP 2</span><h2>円にすると「同じ」が生まれる</h2></div>
+  <div class="step-body">
+    <p>一列では別ものだった <strong>ABCD</strong> と <strong>BCDA</strong>。この2つの帯の<span class="hl">端と端をつなげて円にしてみる</span>と……?</p>
+
+    <div class="two-stages">
+      <div class="stage-wrap">
+        <div class="stage-label" id="labelL"></div>
+        <div class="stage" id="stageL"><div class="ring"></div></div>
+        <div class="rotate-hint">&nbsp;</div>
+      </div>
+      <div class="stage-wrap">
+        <div class="stage-label" id="labelR"></div>
+        <div class="stage" id="stageR"><div class="ring"></div><div class="hit-area" id="hitR"></div></div>
+        <div class="rotate-hint" id="hintR"></div>
+      </div>
+    </div>
+
+    <div class="match-msg" id="matchMsg">🎉 回したら同じ並びになった!</div>
+
+    <div class="btn-row">
+      <button class="btn" id="btnCurl">端と端をつなげて円にする</button>
+      <button class="btn ghost" id="btnResetRot" style="display:none;">回転をもどす</button>
+      <button class="btn ghost" id="btnReset2">戻す</button>
+    </div>
+    <p class="note">円のテーブルでは「誰の隣に誰がいるか」という<strong>位置関係</strong>だけが意味を持ちます。回転してぴったり重なる並びは、円順列では<span class="hl">同じ1通り</span>として数えます。</p>
+  </div>
+</section>
+
+<!-- ================= STEP 3 ================= -->
+<section class="step" id="step3">
+  <div class="step-head"><span class="step-num">STEP 3</span><h2><span class="nb">24通りは、</span><span class="nb">何個ずつ</span><span class="nb">「同じ」になる?</span></h2></div>
+  <div class="step-body">
+    <p>STEP 1 の24通りを全部円にしたら、いくつのグループに分かれるでしょうか。実際に仲間分けしてみます。</p>
+
+    <div class="perm-grid" id="groupGrid"></div>
+
+    <div class="btn-row">
+      <button class="btn" id="btnColor">① 同じ円になる仲間に色をつける</button>
+      <button class="btn" id="btnGather" disabled>② 仲間を集める</button>
+      <button class="btn" id="btnMerge" disabled>③ 1つにまとめる</button>
+      <button class="btn ghost" id="btnReset3">戻す</button>
+    </div>
+
+    <div class="formula" id="groupFormula"></div>
+    <p class="note fade-block" id="repNote">同じ色は4つずつ(円は4席ぶん回せるから)。そして残った6つを見ると……<span class="hl">ぜんぶ A から始まっています!</span> これが次のステップのヒントです。</p>
+  </div>
+</section>
+
+<!-- ================= STEP 4 ================= -->
+<section class="step" id="step4">
+  <div class="step-head"><span class="step-num">STEP 4</span><h2>「1人固定」の正体</h2></div>
+  <div class="step-body">
+    <p>6つのグループを円で表しました(わざとバラバラに回してあります)。ここで<strong>Aさんを上の席に固定</strong>してみると──</p>
+
+    <div class="circle-grid" id="circleGrid"></div>
+
+    <div class="btn-row">
+      <button class="btn" id="btnFix">Aを上の席に固定する</button>
+      <button class="btn ghost" id="btnReset4">戻す</button>
+    </div>
+
+    <p class="note fade-block" id="fixNote">Aを固定すると、違いは<strong>残り3人 B・C・D の並び方だけ</strong>。つまり 3! = 6 通り。「1人固定する」とは、<span class="hl">各グループから代表を1つずつ選ぶ操作</span>だったのです。</p>
+
+    <div class="summary-box fade-block" id="summaryBox">
+      <div class="box-title">公式 円順列</div>
+      <div class="box-body">
+        <p><strong>考え方①</strong> 直線の順列を、回転でかぶる個数で割る → 4! ÷ 4 = 3!</p>
+        <p><strong>考え方②</strong> 1人を固定して、残りを並べる → (4−1)! = 3!</p>
+        <div class="big-formula">n 人の円順列 = (n−1)! 通り</div>
+        <p class="note" style="text-align:center; background:none; padding:0;">どちらの考え方でも同じ式にたどり着きます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 確認問題 ================= -->
+<section class="step" id="quiz">
+  <div class="step-head"><span class="step-num">問</span><h2>たしかめ問題</h2></div>
+  <div class="step-body">
+    <p>5人が円形のテーブルに座るとき、座り方は何通り?</p>
+    <div class="quiz-opts">
+      <button class="btn ghost quiz-btn" data-ans="120">120通り</button>
+      <button class="btn ghost quiz-btn" data-ans="24">24通り</button>
+      <button class="btn ghost quiz-btn" data-ans="6">6通り</button>
+    </div>
+    <p class="quiz-msg" id="quizMsg" aria-live="polite"></p>
+  </div>
+</section>
+
+<footer>
+  数学A「場合の数・確率」インタラクティブ教材 — 円順列
+</footer>
+
+</main>
+
+<script>
+'use strict';
+
+/* ============================================================
+   共通ユーティリティ
+   ============================================================ */
+const LETTERS = ['A','B','C','D'];
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function makeChip(letter){
+  const el = document.createElement('span');
+  el.className = 'chip ' + letter;
+  el.textContent = letter;
+  return el;
+}
+
+/** 4文字の順列を辞書順で列挙 */
+function permutations(arr){
+  if(arr.length <= 1) return [arr.join('')];
+  const out = [];
+  arr.forEach((x, i) => {
+    const rest = arr.slice(0, i).concat(arr.slice(i + 1));
+    permutations(rest).forEach(p => out.push(x + p));
+  });
+  return out;
+}
+const ALL_PERMS = permutations(LETTERS); // 24通り(辞書順)
+
+/** 回転して一致するものの中で辞書順最小 → グループのキー */
+function canonical(s){
+  let best = s;
+  for(let k = 1; k < s.length; k++){
+    const r = s.slice(k) + s.slice(0, k);
+    if(r < best) best = r;
+  }
+  return best;
+}
+
+const easeInOut = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+
+/* ============================================================
+   STEP 1:24通りを表示
+   ============================================================ */
+const permGrid = document.getElementById('permGrid');
+ALL_PERMS.forEach((p, i) => {
+  const strip = document.createElement('div');
+  strip.className = 'strip';
+  [...p].forEach(ch => strip.appendChild(makeChip(ch)));
+  strip.style.transitionDelay = (i * 28) + 'ms';
+  permGrid.appendChild(strip);
+});
+
+let s1timers = [];
+document.getElementById('btnShowPerms').addEventListener('click', e => {
+  e.target.disabled = true;
+  permGrid.classList.add('shown');
+  document.getElementById('step1Note').style.display = 'block';
+  const line = document.getElementById('permCount');
+  const seq = ['4', '4 × 3', '4 × 3 × 2', '4 × 3 × 2 × 1', '4 × 3 × 2 × 1 = 24通り'];
+  seq.forEach((txt, i) => s1timers.push(setTimeout(() => { line.textContent = txt; }, REDUCED ? 0 : 220 * (i + 1))));
+});
+// 戻す:表示前の状態にリセット
+document.getElementById('btnReset1').addEventListener('click', () => {
+  s1timers.forEach(clearTimeout); s1timers = [];
+  permGrid.classList.remove('shown');
+  document.getElementById('permCount').textContent = '';
+  document.getElementById('step1Note').style.display = 'none';
+  document.getElementById('btnShowPerms').disabled = false;
+});
+
+/* ============================================================
+   STEP 2:帯 → 円、ドラッグ回転で一致体験
+   左 = ABCD(固定) / 右 = BCDA(回せる)
+   座席 i の角度 = -90° + 90°i(上から時計回り)+ θ
+   BCDA は θ = 90° で ABCD と一致する
+   ============================================================ */
+const S2 = {
+  L: { stage: document.getElementById('stageL'), letters: ['A','B','C','D'], chips: [] },
+  R: { stage: document.getElementById('stageR'), letters: ['B','C','D','A'], chips: [] },
+  theta: 0,
+  curled: false,
+  matched: false,
+  MATCH_AT: 270,
+  TOL: 16
+};
+
+[['labelL', S2.L.letters], ['labelR', S2.R.letters]].forEach(([id, ls]) => {
+  const label = document.getElementById(id);
+  ls.forEach(ch => label.appendChild(makeChip(ch)));
+});
+
+function stageSize(stage){ return stage.getBoundingClientRect().width; }
+function chipHalf(side){ return side.chips[0].getBoundingClientRect().width / 2; }
+
+function linearPos(side, i){
+  const S = stageSize(side.stage), half = chipHalf(side);
+  const gap = S * 0.22;
+  return [S/2 + (i - 1.5) * gap - half, S/2 - half];
+}
+function circlePos(side, i, theta){
+  const S = stageSize(side.stage), R = S * 0.34, half = chipHalf(side);
+  // i が増えるほど反時計回りに進むよう -i*90 にする(文字を左から読む向きと一致させるため)
+  const ang = (-90 - i * 90 + theta) * Math.PI / 180;
+  return [S/2 + R * Math.cos(ang) - half, S/2 + R * Math.sin(ang) - half];
+}
+function place(side, posFn, theta){
+  side.chips.forEach((chip, i) => {
+    const [x, y] = posFn(side, i, theta || 0);
+    chip.style.transform = `translate(${x}px, ${y}px)`;
+  });
+}
+
+[S2.L, S2.R].forEach(side => {
+  side.letters.forEach(ch => {
+    const chip = makeChip(ch);
+    side.stage.appendChild(chip);
+    side.chips.push(chip);
+  });
+  place(side, linearPos);
+});
+addEventListener('resize', () => {
+  const fn = S2.curled ? circlePos : linearPos;
+  place(S2.L, fn, 0);
+  place(S2.R, fn, S2.theta);
+});
+
+let s2gen = 0; // 「戻す」が押されたら増える。古いタイマー/アニメを無効化する仕組み
+document.getElementById('btnCurl').addEventListener('click', e => {
+  e.target.disabled = true;
+  const gen = s2gen;
+  S2.curled = true;
+  S2.L.stage.classList.add('curl');
+  S2.R.stage.classList.add('curl');
+  place(S2.L, circlePos, 0);
+  place(S2.R, circlePos, 0);
+  setTimeout(() => {
+    if(gen !== s2gen) return;
+    S2.L.stage.classList.remove('curl');
+    S2.R.stage.classList.remove('curl');
+    S2.R.stage.classList.add('draggable');
+    document.getElementById('hintR').textContent = '👆 右の円を指で回してみよう';
+    document.getElementById('btnResetRot').style.display = '';
+  }, REDUCED ? 0 : 950);
+});
+// 戻す:帯の状態まで完全リセット
+document.getElementById('btnReset2').addEventListener('click', () => {
+  s2gen++;
+  dragging = false;
+  S2.matched = false; S2.curled = false; S2.theta = 0;
+  [S2.L, S2.R].forEach(s => s.stage.classList.remove('curl', 'matched', 'draggable', 'dragging'));
+  place(S2.L, linearPos, 0);
+  place(S2.R, linearPos, 0);
+  document.getElementById('matchMsg').classList.remove('show');
+  document.getElementById('hintR').textContent = '';
+  document.getElementById('btnResetRot').style.display = 'none';
+  document.getElementById('btnCurl').disabled = false;
+});
+
+/* ドラッグ回転(Pointer Events)
+   ・当たり判定は円形の .hit-area のみ(四隅は常にページスクロール可能)
+   ・touchmove の preventDefault も併用(古い iOS Safari 対策) */
+const hitR = document.getElementById('hitR');
+let dragging = false, startPointerAng = 0, startTheta = 0;
+
+hitR.addEventListener('touchmove', ev => ev.preventDefault(), { passive:false });
+
+function pointerAngle(ev){
+  const r = S2.R.stage.getBoundingClientRect();
+  return Math.atan2(ev.clientY - (r.top + r.height/2), ev.clientX - (r.left + r.width/2)) * 180 / Math.PI;
+}
+hitR.addEventListener('pointerdown', ev => {
+  if(!S2.curled || S2.matched) return;
+  ev.preventDefault();
+  dragging = true;
+  S2.R.stage.classList.add('dragging');
+  hitR.setPointerCapture(ev.pointerId);
+  startPointerAng = pointerAngle(ev);
+  startTheta = S2.theta;
+});
+hitR.addEventListener('pointermove', ev => {
+  if(!dragging) return;
+  ev.preventDefault();
+  S2.theta = startTheta + (pointerAngle(ev) - startPointerAng);
+  place(S2.R, circlePos, S2.theta);
+});
+hitR.addEventListener('pointerup', () => {
+  if(!dragging) return;
+  dragging = false;
+  S2.R.stage.classList.remove('dragging');
+  const diff = ((S2.theta - S2.MATCH_AT) % 360 + 360) % 360;
+  const dist = Math.min(diff, 360 - diff);
+  if(dist <= S2.TOL) snapToMatch();
+});
+hitR.addEventListener('pointercancel', () => {
+  dragging = false;
+  S2.R.stage.classList.remove('dragging');
+});
+
+function snapToMatch(){
+  S2.matched = true;
+  const target = S2.MATCH_AT + Math.round((S2.theta - S2.MATCH_AT) / 360) * 360;
+  animateTheta(S2.theta, target, REDUCED ? 0 : 350, () => {
+    S2.L.stage.classList.add('matched');
+    S2.R.stage.classList.add('matched');
+    document.getElementById('matchMsg').classList.add('show');
+    document.getElementById('hintR').textContent = 'BCDA は ABCD と同じ円だった!';
+  });
+}
+function animateTheta(from, to, dur, done){
+  if(dur === 0){ S2.theta = to; place(S2.R, circlePos, to); done && done(); return; }
+  const gen = s2gen, t0 = performance.now();
+  (function tick(now){
+    if(gen !== s2gen) return; // リセットされたら中断
+    const t = Math.min(1, (now - t0) / dur);
+    S2.theta = from + (to - from) * easeInOut(t);
+    place(S2.R, circlePos, S2.theta);
+    if(t < 1) requestAnimationFrame(tick); else done && done();
+  })(t0);
+}
+
+document.getElementById('btnResetRot').addEventListener('click', () => {
+  S2.matched = false;
+  S2.L.stage.classList.remove('matched');
+  S2.R.stage.classList.remove('matched');
+  document.getElementById('matchMsg').classList.remove('show');
+  document.getElementById('hintR').textContent = '👆 右の円を指で回してみよう';
+  animateTheta(S2.theta, 0, REDUCED ? 0 : 450);
+});
+
+/* ============================================================
+   STEP 3:グループ分け(色づけ → FLIPで集合 → 代表を残す)
+   代表 = 各グループで A から始まる並び(必ず1つずつ存在)
+   ============================================================ */
+const groupGrid = document.getElementById('groupGrid');
+const groupKeys = [...new Set(ALL_PERMS.map(canonical))].sort(); // 6グループ
+const stripEls = [];
+
+ALL_PERMS.forEach(p => {
+  const strip = document.createElement('div');
+  strip.className = 'strip';
+  strip.dataset.perm = p;
+  strip.dataset.group = groupKeys.indexOf(canonical(p));
+  [...p].forEach(ch => strip.appendChild(makeChip(ch)));
+  groupGrid.appendChild(strip);
+  stripEls.push(strip);
+});
+
+let s3gen = 0;
+document.getElementById('btnColor').addEventListener('click', e => {
+  e.target.disabled = true;
+  const gen = s3gen;
+  stripEls.forEach((el, i) => {
+    setTimeout(() => { if(gen === s3gen) el.classList.add('g' + el.dataset.group); }, REDUCED ? 0 : i * 30);
+  });
+  setTimeout(() => { if(gen === s3gen) document.getElementById('btnGather').disabled = false; },
+    REDUCED ? 0 : stripEls.length * 30 + 200);
+});
+
+document.getElementById('btnGather').addEventListener('click', e => {
+  e.target.disabled = true;
+  const gen = s3gen;
+  const first = new Map(stripEls.map(el => [el, el.getBoundingClientRect()]));
+  const sorted = [...stripEls].sort((a, b) =>
+    (a.dataset.group - b.dataset.group) || a.dataset.perm.localeCompare(b.dataset.perm));
+  sorted.forEach(el => groupGrid.appendChild(el));
+  sorted.forEach(el => {
+    const f = first.get(el), l = el.getBoundingClientRect();
+    const dx = f.left - l.left, dy = f.top - l.top;
+    if(dx || dy){
+      el.style.transition = 'none';
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      el.getBoundingClientRect(); // reflow
+      el.style.transition = 'transform .65s cubic-bezier(.4,0,.2,1)';
+      el.style.transform = '';
+    }
+  });
+  setTimeout(() => {
+    if(gen !== s3gen) return;
+    sorted.forEach(el => { el.style.transition = ''; });
+    document.getElementById('btnMerge').disabled = false;
+  }, REDUCED ? 0 : 720);
+});
+
+document.getElementById('btnMerge').addEventListener('click', e => {
+  e.target.disabled = true;
+  const gen = s3gen;
+  const reps = stripEls.filter(el => el.dataset.perm[0] === 'A');
+  const others = stripEls.filter(el => el.dataset.perm[0] !== 'A');
+  reps.forEach(el => el.classList.add('rep'));
+  others.forEach((el, i) => setTimeout(() => { if(gen === s3gen) el.classList.add('gone'); }, REDUCED ? 0 : i * 15));
+
+  setTimeout(() => {
+    if(gen !== s3gen) return;
+    const first = new Map(reps.map(el => [el, el.getBoundingClientRect()]));
+    others.forEach(el => { el.style.display = 'none'; });
+    reps.forEach(el => {
+      const f = first.get(el), l = el.getBoundingClientRect();
+      const dx = f.left - l.left, dy = f.top - l.top;
+      if(dx || dy){
+        el.style.transition = 'none';
+        el.style.transform = `translate(${dx}px, ${dy}px)`;
+        el.getBoundingClientRect();
+        el.style.transition = 'transform .6s cubic-bezier(.4,0,.2,1)';
+        el.style.transform = '';
+      }
+    });
+    document.getElementById('groupFormula').textContent = '24 ÷ 4 = 6 グループ';
+    document.getElementById('repNote').classList.add('show');
+    groupGrid.classList.add('merged'); // 6個を3列で表示
+  }, REDUCED ? 0 : 600);
+});
+
+// 戻す:色づけ前の辞書順の状態に完全リセット
+document.getElementById('btnReset3').addEventListener('click', () => {
+  s3gen++;
+  stripEls.forEach(el => {
+    el.className = 'strip';        // g0〜g5 / rep / gone をまとめて除去
+    el.style.display = '';
+    el.style.transition = '';
+    el.style.transform = '';
+    groupGrid.appendChild(el);     // stripEls は辞書順のまま保持しているので元の並びに戻る
+  });
+  groupGrid.classList.remove('merged');
+  document.getElementById('btnColor').disabled = false;
+  document.getElementById('btnGather').disabled = true;
+  document.getElementById('btnMerge').disabled = true;
+  document.getElementById('groupFormula').textContent = '';
+  document.getElementById('repNote').classList.remove('show');
+});
+
+/* ============================================================
+   STEP 4:円で表示 → Aを上に固定
+   ============================================================ */
+const circleGrid = document.getElementById('circleGrid');
+const minis = [];
+
+// 各グループから、Cで始まるメンバーを表示用に採用(Aは上以外の席になる)
+const displayed = groupKeys.map(key => {
+  for(let k = 0; k < 4; k++){
+    const r = key.slice(k) + key.slice(0, k);
+    if(r[0] === 'C') return r;
+  }
+  return key;
+});
+
+function miniChipHalf(m){ return m.chips[0].getBoundingClientRect().width / 2; }
+function miniPos(m, i, theta){
+  const S = m.stage.getBoundingClientRect().width, R = S * 0.33, half = miniChipHalf(m);
+  const ang = (-90 - i * 90 + theta) * Math.PI / 180;
+  return [S/2 + R * Math.cos(ang) - half, S/2 + R * Math.sin(ang) - half];
+}
+function placeMini(m){
+  m.chips.forEach((chip, i) => {
+    const [x, y] = miniPos(m, i, m.theta);
+    chip.style.transform = `translate(${x}px, ${y}px)`;
+  });
+}
+
+displayed.forEach(arr => {
+  const wrap = document.createElement('div');
+  wrap.className = 'mini-wrap';
+  const stage = document.createElement('div');
+  stage.className = 'mini';
+  const m = { stage, chips: [], theta: 0, arr };
+  [...arr].forEach(ch => {
+    const chip = makeChip(ch);
+    stage.appendChild(chip);
+    m.chips.push(chip);
+  });
+  const rest = document.createElement('div');
+  rest.className = 'rest-line';
+  m.restEl = rest;
+  wrap.appendChild(stage);
+  wrap.appendChild(rest);
+  circleGrid.appendChild(wrap);
+  minis.push(m);
+});
+function layoutMinis(){ minis.forEach(placeMini); }
+addEventListener('resize', layoutMinis);
+layoutMinis();
+
+let s4gen = 0;
+document.getElementById('btnFix').addEventListener('click', e => {
+  e.target.disabled = true;
+  const gen = s4gen;
+  minis.forEach((m, gi) => {
+    const k = m.arr.indexOf('A');
+    const target = k * 90 + 360; // 見栄えに1回転追加(反時計回り基準にあわせ符号を反転)
+    const dur = REDUCED ? 0 : 1000;
+    setTimeout(() => {
+      if(gen !== s4gen) return;
+      animateMini(m, target, dur, () => {
+        m.stage.classList.add('fixed');
+        const rot = m.arr.slice(k) + m.arr.slice(0, k); // A??? の形
+        // 表示順は元の並び(BCD, BDC, CBD, ...)のまま。
+        // 円のほうを反時計回り基準にしたので、この並びが左→右の読み順と自然に一致する。
+        m.restEl.textContent = rot.slice(1).split('').join('・');
+        m.restEl.classList.add('show');
+        if(gi === minis.length - 1){
+          document.getElementById('fixNote').classList.add('show');
+          document.getElementById('summaryBox').classList.add('show');
+        }
+      });
+    }, REDUCED ? 0 : gi * 130);
+  });
+});
+// 戻す:各円を固定前の状態にリセット
+document.getElementById('btnReset4').addEventListener('click', () => {
+  s4gen++;
+  minis.forEach(m => {
+    m.theta = 0;
+    placeMini(m);
+    m.stage.classList.remove('fixed');
+    m.restEl.classList.remove('show');
+    m.restEl.textContent = '';
+  });
+  document.getElementById('btnFix').disabled = false;
+  document.getElementById('fixNote').classList.remove('show');
+  document.getElementById('summaryBox').classList.remove('show');
+});
+
+function animateMini(m, to, dur, done){
+  if(dur === 0){ m.theta = ((to % 360) + 360) % 360; placeMini(m); done && done(); return; }
+  const gen = s4gen, from = m.theta, t0 = performance.now();
+  (function tick(now){
+    if(gen !== s4gen) return; // リセットされたら中断
+    const t = Math.min(1, (now - t0) / dur);
+    m.theta = from + (to - from) * easeInOut(t);
+    placeMini(m);
+    if(t < 1) requestAnimationFrame(tick); else done && done();
+  })(t0);
+}
+
+/* ============================================================
+   確認問題
+   ============================================================ */
+const quizMsg = document.getElementById('quizMsg');
+document.querySelectorAll('.quiz-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(btn.dataset.ans === '24'){
+      quizMsg.className = 'quiz-msg ok';
+      quizMsg.textContent = '⭕ 正解! (5−1)! = 4! = 24通り。1人固定して残り4人を並べます。';
+    } else if(btn.dataset.ans === '120'){
+      quizMsg.className = 'quiz-msg ng';
+      quizMsg.textContent = '❌ 120 = 5! は一列に並べたとき。円では回転してかぶる分(÷5)を忘れずに。';
+    } else {
+      quizMsg.className = 'quiz-msg ng';
+      quizMsg.textContent = '❌ 6 = 3! は4人のとき。5人なら (5−1)! を計算してみよう。';
+    }
+  });
+});
+</script>
+</body>
+</html>
