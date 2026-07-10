@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wakamezrzw.github.io/touch_math/sitemap.xml
